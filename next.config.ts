@@ -1,2 +1,8 @@
 import type { NextConfig } from "next";
-export default {} satisfies NextConfig;
+
+const nextConfig: NextConfig = {
+  // Uncomment to test the workaround (only works for npm packages, not local file: packages)
+  // serverExternalPackages: ["my-sdk"],
+};
+
+export default nextConfig;

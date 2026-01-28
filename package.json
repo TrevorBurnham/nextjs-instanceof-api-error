@@ -1,11 +1,23 @@
 {
+  "name": "nextjs-instanceof-api-error",
+  "version": "0.1.0",
   "private": true,
-  "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
-  "dependencies": {
-    "registry": "file:./packages/registry",
-    "sdk-a": "file:./packages/sdk-a",
-    "sdk-b": "file:./packages/sdk-b",
-    "next": "^16.0.10", "react": "19.2.4", "react-dom": "19.2.4"
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "devDependencies": { "@types/node": "^22", "@types/react": "^19", "typescript": "^5" }
+  "dependencies": {
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "my-sdk": "file:./packages/my-sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
 }
