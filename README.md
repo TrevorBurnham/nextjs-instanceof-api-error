@@ -2,7 +2,8 @@
 
 Two SDKs register different classes under the same key. The last one wins, breaking `instanceof`.
 
-## Repro
+## Steps to reproduce
+
 ```bash
 npm i && npm run build && npm start
 curl localhost:3000/api/test   # {"ok":false,"found":true} ❌
