@@ -1,23 +1,13 @@
 {
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
+  "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
   "dependencies": {
-    "error-checker": "file:./packages/error-checker",
-    "mock-sdk-client": "file:./packages/mock-sdk-client",
-    "mock-sdk-client-b": "file:./packages/mock-sdk-client-b",
-    "mock-smithy-core": "file:./packages/mock-smithy-core",
+    "registry": "file:./packages/registry",
+    "sdk": "file:./packages/sdk",
+    "sdk2": "file:./packages/sdk2",
     "next": "^16.0.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "tslib": "^2.8.1"
+    "react-dom": "19.2.4"
   },
-  "devDependencies": {
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "typescript": "^5"
-  }
+  "devDependencies": { "@types/node": "^22", "@types/react": "^19", "typescript": "^5" }
 }

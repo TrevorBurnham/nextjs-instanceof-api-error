@@ -1,7 +1,0 @@
-{
-  "name": "mock-sdk-client",
-  "version": "1.0.0",
-  "main": "./dist-cjs/index.js",
-  "types": "./dist-types/index.d.ts",
-  "sideEffects": false
-}
