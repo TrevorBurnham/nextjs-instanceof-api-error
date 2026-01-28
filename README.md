@@ -1,45 +1,77 @@
-This is a [Next.js](https://nextjs.org/) template to use when reporting a [bug in the Next.js repository](https://github.com/vercel/next.js/issues) with the `app/` directory.
+# Next.js/Turbopack instanceof Bug Reproduction
 
-## Getting Started
+This repository demonstrates a bug in Next.js/Turbopack where `instanceof` checks fail for error classes when using a shared registry pattern.
 
-These are the steps you should follow when creating a bug report:
+## The Bug
 
-- Bug reports must be verified against the `next@canary` release. The canary version of Next.js ships daily and includes all features and fixes that have not been released to the stable version yet. Think of canary as a public beta. Some issues may already be fixed in the canary version, so please verify that your issue reproduces before opening a new issue. Issues not verified against `next@canary` will be closed after 30 days.
-- Make sure your issue is not a duplicate. Use the [GitHub issue search](https://github.com/vercel/next.js/issues) to see if there is already an open issue that matches yours. If that is the case, upvoting the other issue's first comment is desirable as we often prioritize issues based on the number of votes they receive. Note: Adding a "+1" or "same issue" comment without adding more context about the issue should be avoided. If you only find closed related issues, you can link to them using the issue number and `#`, eg.: `I found this related issue: #3000`.
-- If you think the issue is not in Next.js, the best place to ask for help is our [Discord community](https://nextjs.org/discord) or [GitHub discussions](https://github.com/vercel/next.js/discussions). Our community is welcoming and can often answer a project-related question faster than the Next.js core team.
-- Make the reproduction as minimal as possible. Try to exclude any code that does not help reproducing the issue. E.g. if you experience problems with Routing, including ESLint configurations or API routes aren't necessary. The less lines of code is to read through, the easier it is for the Next.js team to investigate. It may also help catching bugs in your codebase before publishing an issue.
-- Don't forget to create a new repository on GitHub and make it public so that anyone can view it and reproduce it.
+When using SDK-style packages that:
+1. Use a shared registry pattern (like Smithy's TypeRegistry) for error class registration
+2. The registry package is bundled (not externalized)
+3. Multiple routes import from the same SDK package
 
-## How to use this template
+The `instanceof` check can fail because Turbopack creates separate copies of the registry module in each route chunk, causing class identity to be lost.
 
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
+## Root Cause Analysis
 
-```bash
-npx create-next-app --example reproduction-template reproduction-app
-```
+The issue occurs because:
+1. The registry module (e.g., `@smithy/core` containing `TypeRegistry`) gets duplicated into each route chunk
+2. Each chunk has its own `Map` instance for storing registered classes
+3. Error classes registered in one chunk are not visible in other chunks
+4. When an error is created via the registry in one chunk and checked via `instanceof` in another chunk, the class identity doesn't match
 
-```bash
-yarn create next-app --example reproduction-template reproduction-app
-```
+## Reproduction
 
-```bash
-pnpm create next-app --example reproduction-template reproduction-app
-```
+This repo demonstrates the issue with a mock SDK setup:
+- `mock-smithy-core`: Simulates `@smithy/core` with a TypeRegistry
+- `mock-sdk-client` and `mock-sdk-client-b`: Simulate SDK clients that register errors
 
-## Learn More
+### Steps
 
-To learn more about Next.js, take a look at the following resources:
+1. `npm install`
+2. `npm run build`
+3. `npm run start`
+4. Visit `/api/route-1` (uses client A) - may show `isInstanceOf: true`
+5. Visit `/api/route-6` (uses client B) - may show `isInstanceOf: false`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [How to Contribute to Open Source (Next.js)](https://www.youtube.com/watch?v=cuoNzXFLitc) - a video tutorial by Lee Robinson
-- [Triaging in the Next.js repository](https://github.com/vercel/next.js/blob/canary/contributing.md#triaging) - how we work on issues
-- [CodeSandbox](https://codesandbox.io/s/github/vercel/next.js/tree/canary/examples/reproduction-template) - Edit this repository on CodeSandbox
+## Workaround
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+Add the registry package to `serverExternalPackages` in `next.config.js`:
 
-## Deployment
+\`\`\`js
+module.exports = {
+  serverExternalPackages: ["mock-smithy-core"],
+};
+\`\`\`
 
-If your reproduction needs to be deployed, the easiest way is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For AWS SDK / Smithy-based packages, add `@smithy/core`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+\`\`\`js
+module.exports = {
+  serverExternalPackages: [
+    "@smithy/middleware-stack",
+    "@smithy/smithy-client",
+    "@smithy/core",  // <-- Add this to fix instanceof issues
+  ],
+};
+\`\`\`
+
+This forces the package to be loaded from `node_modules` at runtime instead of being bundled, ensuring a single registry instance.
+
+## Related
+
+This issue affects:
+- AWS SDK v3 clients using Smithy TypeRegistry
+- Internal Amazon packages (`@amzn/basin-*`) that use traditional multi-file CJS builds
+- Any package using a singleton registry pattern for class registration
+
+## Technical Details
+
+The Smithy TypeRegistry pattern:
+1. SDK schemas register error classes: `TypeRegistry.for(namespace).registerError(schema, ErrorClass)`
+2. During response deserialization, errors are created via: `registry.getErrorCtor(schema)`
+3. User code checks: `error instanceof ErrorClass`
+
+When the registry is duplicated:
+- Registration happens in chunk A's registry
+- Lookup happens in chunk B's registry (empty or different)
+- `instanceof` fails because the classes are different objects
