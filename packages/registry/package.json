@@ -1,1 +1,1 @@
-{"name":"registry","version":"1.0.0","main":"index.js"}
+{"name":"registry","main":"index.js","type":"module"}

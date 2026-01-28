@@ -3,11 +3,9 @@
   "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
   "dependencies": {
     "registry": "file:./packages/registry",
-    "sdk": "file:./packages/sdk",
-    "sdk2": "file:./packages/sdk2",
-    "next": "^16.0.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "sdk-a": "file:./packages/sdk-a",
+    "sdk-b": "file:./packages/sdk-b",
+    "next": "^16.0.10", "react": "19.2.4", "react-dom": "19.2.4"
   },
   "devDependencies": { "@types/node": "^22", "@types/react": "^19", "typescript": "^5" }
 }

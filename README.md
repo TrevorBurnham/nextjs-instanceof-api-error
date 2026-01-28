@@ -1,35 +1,15 @@
-# Turbopack Registry Pattern Test
+# Turbopack Registry Bug
 
-Tests whether Turbopack correctly deduplicates singleton registry modules.
+Two SDKs register different classes under the same key. The last one wins, breaking `instanceof`.
 
-## Structure
-
-- `registry` - Shared singleton with a `Map` for class registration
-- `sdk` - Registers `MyError` class, creates errors via registry
-- `sdk2` - Also registers `MyError` class, checks errors via registry
-
-## Test
-
+## Repro
 ```bash
-npm install && npm run build && npm start
-curl http://localhost:3000/api/test
+npm i && npm run build && npm start
+curl localhost:3000/api/test   # {"ok":false,"found":true} ❌
+curl localhost:3000/api/test2  # {"ok":true,"found":true}  ✅
 ```
 
-## Expected Result
-
-`{"match":true,"found":true}` - The registry is shared, so `instanceof` works.
-
-## Potential Issue
-
-If Turbopack duplicates the registry module across chunks, each chunk gets its own `Map`, causing:
-- `found: true` but `match: false` (wrong class in registry)
-- Or `found: false` (empty registry in checker's chunk)
-
-## Workaround
-
-If the bug manifests, add the registry to `serverExternalPackages`:
-
+## Fix
 ```js
-// next.config.ts
-serverExternalPackages: ["registry"]  // or "@smithy/core" for AWS SDK
+serverExternalPackages: ["registry"]  // or "@smithy/core"
 ```

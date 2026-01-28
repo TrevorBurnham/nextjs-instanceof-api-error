@@ -1,2 +1,2 @@
 import type { NextConfig } from "next";
-export default { /* serverExternalPackages: ["registry"] */ } satisfies NextConfig;
+export default {} satisfies NextConfig;
